@@ -1,5 +1,6 @@
 use protobuf_codegen::Customize;
 use std::path::Path;
+use std::path::PathBuf;
 
 struct ProtobufFile {
     pub proto_file: &'static str,
@@ -51,7 +52,9 @@ fn compile_proto<I: Iterator<Item = (&'static str, &'static str)>>(
     protobuf_files: I,
 ) {
     for file in protobuf_files {
+        std::fs::create_dir_all(file.1).expect("create directory for generated files");
         protobuf_codegen::Codegen::new()
+            .protoc_path(PathBuf::from("../../tool/protoc-27.2-osx-aarch_64/bin/protoc").as_ref())
             .customize(Customize::default().gen_mod_rs(true))
             .out_dir(file.1)
             .input(file.0)
