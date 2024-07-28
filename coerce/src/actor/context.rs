@@ -13,7 +13,7 @@ use std::collections::HashMap;
 
 use tokio::sync::oneshot::Sender;
 use valuable::{Fields, NamedField, NamedValues, StructDef, Structable, Valuable, Value, Visit};
-
+use crate::actor::scheduler::ActorType;
 use crate::actor::supervised::{ChildRef, Supervised};
 use crate::actor::watch::watchers::Watchers;
 
@@ -222,6 +222,15 @@ impl ActorContext {
         id: ActorId,
         actor: A,
     ) -> Result<LocalActorRef<A>, ActorRefErr> {
+        self.spawn_with_type(id, actor, ActorType::Anonymous).await
+    }
+
+    pub async fn spawn_with_type<A: Actor>(
+        &mut self,
+        id: ActorId,
+        actor: A,
+        actor_type: ActorType,
+    ) -> Result<LocalActorRef<A>, ActorRefErr> {
         let supervised = {
             if self.supervised.is_none() {
                 self.supervised =
@@ -233,7 +242,7 @@ impl ActorContext {
 
         let system = self.system.as_ref().unwrap().clone();
         let parent_ref = self.boxed_ref.clone();
-        supervised.spawn(id, actor, system, parent_ref).await
+        supervised.spawn_with_type(id, actor, system, parent_ref, actor_type).await
     }
 
     /// Spawns the supervised actor but doesn't wait for the actor to be completely started before

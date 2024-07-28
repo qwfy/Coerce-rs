@@ -57,12 +57,26 @@ impl<A: Actor> Handler<Terminated> for A {
 }
 
 impl Supervised {
+
     pub async fn spawn<A: Actor>(
         &mut self,
         id: ActorId,
         actor: A,
         system: ActorSystem,
         parent_ref: BoxedActorRef,
+    ) -> Result<LocalActorRef<A>, ActorRefErr> {
+        self.spawn_with_type(
+            id, actor, system, parent_ref, ActorType::Anonymous
+        ).await
+    }
+
+    pub async fn spawn_with_type<A: Actor>(
+        &mut self,
+        id: ActorId,
+        actor: A,
+        system: ActorSystem,
+        parent_ref: BoxedActorRef,
+        actor_type: ActorType,
     ) -> Result<LocalActorRef<A>, ActorRefErr> {
         if let Some(_) = self.children.get(&id) {
             return Err(ActorRefErr::AlreadyExists(id));
@@ -72,7 +86,7 @@ impl Supervised {
         let actor_ref = start_actor(
             actor,
             id.clone(),
-            ActorType::Anonymous,
+            actor_type,
             Some(tx),
             Some(system),
             Some(parent_ref),
